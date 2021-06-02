@@ -31,14 +31,13 @@ public:
 		LOG_INFO() << "PGEApplication::OnUserCreate() initializing";
 		m_Sprite1.Load("Assets\\desert.png");
 		m_Sprite2.Load("Assets\\soniccd.png");
+		m_RenderBatch.SetOrder(olc::RenderBatch::DrawOrder::Z_INC);
 		return true;
 	}
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		olc::vi2d mpos(GetMousePos());
-
-		
 
 		m_RenderBatch.Begin();
 		m_RenderBatch.Draw(
@@ -52,7 +51,7 @@ public:
 			olc::vf2d(mpos.x - m_Sprite2.Sprite()->width/2, 
 				mpos.y - m_Sprite2.Sprite()->height/2),
 			1.0f,
-			1.0f
+			0.0f
 			);
 		m_RenderBatch.End();
 

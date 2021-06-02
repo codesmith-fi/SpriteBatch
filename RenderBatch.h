@@ -62,6 +62,7 @@
 
 #include <list>
 #include <memory>
+#include <assert.h>
 
 namespace olc {
 
@@ -96,7 +97,7 @@ public:
 		olc::Renderable* d, 
 		const olc::vf2d& p,
 		const olc::vf2d& targetsize,
-		float order = 1.0f) : renderable(d), position(p), size(targetsize), depth(order) {
+		float order = 1.0f) : renderable(d), position(p), size(targetsize), z(order) {
 	}
 	virtual ~RenderBatchEntry() {};
 
@@ -104,87 +105,156 @@ public: // Data
 	olc::Renderable* renderable;
 	olc::vf2d position;
 	olc::vf2d size;
-	float depth;
+	float z;
 };
 
 class RenderBatch : public olc::PGEX
 {
 public: // Enums
 	enum class DrawOrder {
-		ASCENDING,
-		DESCENDING,
+		// lower Z is in front, Z-value increases when deeper
+		Z_INC,
+		// higher Z is in front. Z-value decreases when deeper
+		Z_DECR,
+		// Unordered, insertion order
 		UNORDERED
 	};
 
 public:
-	RenderBatch(const DrawOrder& order = DrawOrder::ASCENDING) :
-		m_order(order) {};
+	RenderBatch(const DrawOrder& order = DrawOrder::UNORDERED) :
+		m_order(order), m_active(false) { };
 	virtual ~RenderBatch() {}
 
+	/**
+	 * Set the desired Z ordering. 
+	 * @param order @see DrawOrder enumeration
+	 * @notice Defaults to DrawOrder::UnOrdered
+	 */
 	void SetOrder(const DrawOrder& order) {
 		m_order = order;
 	}
 
+	/**
+	 * Begin drawing with this RenderBatch
+	 * Makes this RenderBatch active allowing calls to Draw() and End() etc.
+	 */
 	void Begin() {
+		// Ensure that this RenderBatch is not already active
+		assert(!m_active);
+
+		m_active = true;
 		m_drawables.clear();
 	}
 
+	/**
+	 * End drawing and cause all Renderables to be drawn 
+	 */
 	void End() {
+		// Ensure that Begin() was called prior to End()
+		assert(m_active);
+
 		for (auto i = m_drawables.begin(); i != m_drawables.end(); ++i) {
-			float tw = i->get()->renderable->Sprite()->width;
-			float th = i->get()->renderable->Sprite()->height;
+			float tw = i->renderable->Sprite()->width;
+			float th = i->renderable->Sprite()->height;
 			pge->DrawPartialDecal(
-				i->get()->position,
-				i->get()->size,
-				i->get()->renderable->Decal(), 
+				i->position,
+				i->size,
+				i->renderable->Decal(), 
 				vi2d(0,0), vi2d(tw, th));
 		}
+		m_active = false;
 	}
 
+	/**
+	 * Add a new Renderable to the draw queue. 
+	 * Will not draw anything in this method, a call to End() will cause the 
+	 * drawing based on objects added with Draw() calls
+	 * 
+	 * @param renderable A pointer to renderable object containing Sprite and Decal
+	 * @param pos Position vector, location where the renderable will be drawn to
+	 * @param size Size of the target renderable, will be scaled to fit
+	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
+	 */
 	void Draw(
 		olc::Renderable* renderable,
 		const olc::vf2d& pos,
 		const olc::vf2d& size,
-		float depth)
+		float z)
 	{
-		if (renderable != nullptr) {
-			std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
-				renderable, 
+		// Ensure that Begin() was called and this RenderBatch is active
+		assert(m_active);
+
+		if(renderable != nullptr) {
+			RenderBatchEntry entry(
+				renderable,
 				pos,
 				size,
-				depth);
-
-			m_drawables.push_back(std::move(sbe));
+				z
+			);
+			insertBatchEntry(entry);
 		}
 	}
 
+	/**
+	 * Add a new Renderable to the draw queue.
+	 * Will not draw anything in this method, a call to End() will cause the
+	 * drawing based on objects added with Draw() calls
+	 *
+	 * @param renderable A pointer to renderable object containing Sprite and Decal
+	 * @param pos Position vector, location where the renderable will be drawn to
+	 * @param scale Scaling factor, 1.0f means the original bitmap size
+	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
+	 */
 	void Draw(
 		olc::Renderable* renderable,
 		const olc::vf2d& pos, 
 		float scale, 
-		float depth) 
+		float z) 
 	{
-		if (renderable != nullptr) {
-			std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
+		// Ensure that Begin() was called and this RenderBatch is active
+
+		assert(m_active);
+		if(renderable != nullptr) {
+			RenderBatchEntry entry(
 				renderable,
 				pos,
 				olc::vf2d(renderable->Sprite()->width * scale, renderable->Sprite()->height * scale),
-				depth);
-
-			m_drawables.push_back(std::move(sbe));
+				z
+			);
+			insertBatchEntry(entry);
 		}
-
-		// TODO: Ordering
-		/*
-		for (auto i = m_drawables.begin(); i != m_drawables.end(); ++i) {
-
+	}
+private:
+	/**
+	 * Insert a RenderBatchEntry in desired Z order, either z increasing, 
+	 * decreasing or unordered.
+	 * Use SetOrder() to set the desired order. Defaults to UNORDERED which 
+	 * is the insertion order
+	 */
+	void insertBatchEntry(RenderBatchEntry& entry) {
+		auto begin = m_drawables.begin();
+		auto end = m_drawables.end();
+		if(m_order == DrawOrder::Z_INC) {
+			while ((begin != end) && ((*begin).z > entry.z)) {
+				++begin;
+			}
+			m_drawables.insert(begin, entry);
 		}
-		*/
+		else if (m_order == DrawOrder::Z_DECR) {
+			while ((begin != end) && ((*begin).z < entry.z)) {
+				++begin;
+			}
+			m_drawables.insert(begin, entry);
+		}
+		else {			
+			m_drawables.push_back(entry);
+		}
 	}
 
-private:
-	std::list<std::unique_ptr<RenderBatchEntry>> m_drawables;
-	DrawOrder m_order;
+private: // Data
+	std::list<RenderBatchEntry> m_drawables;
+	DrawOrder m_order = DrawOrder::UNORDERED;
+	bool m_active = false;
 };
 
 } // namespace olc
