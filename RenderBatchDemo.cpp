@@ -36,6 +36,8 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
+		olc::vi2d mpos(GetMousePos());
+
 		m_RenderBatch.Begin();
 		m_RenderBatch.Draw(
 			&m_Sprite1,
@@ -45,11 +47,16 @@ public:
 		);
 		m_RenderBatch.Draw(
 			&m_Sprite2,
-			olc::vf2d(-300.0f, 50.0f),
+			olc::vf2d(mpos.x - m_Sprite2.Sprite()->width/2, 
+				mpos.y - m_Sprite2.Sprite()->height/2),
 			olc::vf2d(1.0f, 1.0f),
 			1.0f
 			);
 		m_RenderBatch.End();
+
+		std::string fpss = "FPS: " + std::to_string(GetFPS());
+
+		DrawStringDecal(olc::vf2d(10.0f, 10.0f), fpss);
 		return true;
 	}
 
