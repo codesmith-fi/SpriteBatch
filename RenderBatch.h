@@ -83,14 +83,14 @@ class RenderBatchEntry
 {
 public:
 	RenderBatchEntry(
-		std::unique_ptr<olc::Decal> d, 
+		olc::Renderable* d, 
 		const olc::vf2d& p,
 		const olc::vf2d& s,
-		float order) : decal(std::move(d)), position(p), depth(order), scale(s) {
+		float order) : renderable(d), position(p), depth(order), scale(s) {
 	}
 	virtual ~RenderBatchEntry() {};
 
-	std::unique_ptr<olc::Decal> decal;
+	olc::Renderable* renderable;
 	float depth;
 	olc::vf2d scale;
 	olc::vf2d position;
@@ -120,23 +120,28 @@ public:
 
 	void End() {
 		for (auto i = m_drawables.begin(); i != m_drawables.end(); ++i) {
-			olc::vf2d p = i->get()->position;
-			olc::vf2d s = i->get()->scale;
-			olc::Decal* d= i->get()->decal.get();
-			pge->DrawDecal(p, d, s);
+			pge->DrawDecal(
+				i->get()->position, 
+				i->get()->renderable->Decal(), 
+				i->get()->scale);
 		}
 	}
 
-	void Draw(std::shared_ptr<olc::Sprite> sprite,
-		const olc::vf2d& pos, const olc::vf2d& scale, std::float_t depth) {
+	void Draw(
+		olc::Renderable* renderable,
+		const olc::vf2d& pos, 
+		const olc::vf2d& scale, 
+		float depth) 
+	{
+		if (renderable != nullptr) {
+			std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
+				renderable,
+				pos,
+				scale,
+				depth);
 
-		std::unique_ptr<olc::Decal> decal = std::make_unique<olc::Decal>(sprite.get());
-		std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
-			std::move(decal),
-			pos,
-			scale,
-			depth);
-		m_drawables.push_back(std::move(sbe));
+			m_drawables.push_back(std::move(sbe));
+		}
 
 		// TODO: Ordering
 		/*

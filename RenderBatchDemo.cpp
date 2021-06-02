@@ -29,8 +29,8 @@ public:
 	bool OnUserCreate() override
 	{
 		LOG_INFO() << "PGEApplication::OnUserCreate() initializing";
-		m_Sprite1 = std::make_shared<olc::Sprite>("Assets\\desert.png");
-		m_Sprite2 = std::make_shared<olc::Sprite>("Assets\\soniccd.png");
+		m_Sprite1.Load("Assets\\desert.png");
+		m_Sprite2.Load("Assets\\soniccd.png");
 		return true;
 	}
 
@@ -38,14 +38,14 @@ public:
 	{
 		m_RenderBatch.Begin();
 		m_RenderBatch.Draw(
-			m_Sprite1,
+			&m_Sprite1,
 			olc::vf2d(0.0f, 0.0f),
 			olc::vf2d(1.0f, 1.0f),
 			1.0f
 		);
 		m_RenderBatch.Draw(
-			m_Sprite2,
-			olc::vf2d(50.0f, 50.0f),
+			&m_Sprite2,
+			olc::vf2d(-300.0f, 50.0f),
 			olc::vf2d(1.0f, 1.0f),
 			1.0f
 			);
@@ -65,8 +65,8 @@ public:
 
 private:
 	olc::RenderBatch m_RenderBatch;
-	std::shared_ptr<olc::Sprite> m_Sprite1;
-	std::shared_ptr<olc::Sprite> m_Sprite2;
+	olc::Renderable m_Sprite1;
+	olc::Renderable m_Sprite2;
 };
 
 int main()
