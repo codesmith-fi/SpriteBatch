@@ -38,18 +38,20 @@ public:
 	{
 		olc::vi2d mpos(GetMousePos());
 
+		
+
 		m_RenderBatch.Begin();
 		m_RenderBatch.Draw(
 			&m_Sprite1,
 			olc::vf2d(0.0f, 0.0f),
-			olc::vf2d(1.0f, 1.0f),
+			olc::vf2d(ScreenWidth(), ScreenHeight()),
 			1.0f
 		);
 		m_RenderBatch.Draw(
 			&m_Sprite2,
 			olc::vf2d(mpos.x - m_Sprite2.Sprite()->width/2, 
 				mpos.y - m_Sprite2.Sprite()->height/2),
-			olc::vf2d(1.0f, 1.0f),
+			1.0f,
 			1.0f
 			);
 		m_RenderBatch.End();
@@ -79,7 +81,7 @@ private:
 int main()
 {
 	PGEApplication demo;
-	if (demo.Construct(256, 240, 4, 4))
+	if (demo.Construct(1024, 768, 1, 1))
 		demo.Start();
 	return 0;
 }

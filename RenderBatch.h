@@ -79,21 +79,32 @@ public: // Data
 	olc::vf2d viewsize;
 };
 
+class RenderableSprite : public olc::Renderable
+{
+public:
+	RenderableSprite() {};
+	virtual ~RenderableSprite() {};
+	olc::vf2d pos;
+	olc::vf2d scale;
+	float z;
+};
+
 class RenderBatchEntry
 {
 public:
 	RenderBatchEntry(
 		olc::Renderable* d, 
 		const olc::vf2d& p,
-		const olc::vf2d& s,
-		float order) : renderable(d), position(p), depth(order), scale(s) {
+		const olc::vf2d& targetsize,
+		float order = 1.0f) : renderable(d), position(p), size(targetsize), depth(order) {
 	}
 	virtual ~RenderBatchEntry() {};
 
+public: // Data
 	olc::Renderable* renderable;
-	float depth;
-	olc::vf2d scale;
 	olc::vf2d position;
+	olc::vf2d size;
+	float depth;
 };
 
 class RenderBatch : public olc::PGEX
@@ -120,24 +131,44 @@ public:
 
 	void End() {
 		for (auto i = m_drawables.begin(); i != m_drawables.end(); ++i) {
-			pge->DrawDecal(
-				i->get()->position, 
+			float tw = i->get()->renderable->Sprite()->width;
+			float th = i->get()->renderable->Sprite()->height;
+			pge->DrawPartialDecal(
+				i->get()->position,
+				i->get()->size,
 				i->get()->renderable->Decal(), 
-				i->get()->scale);
+				vi2d(0,0), vi2d(tw, th));
+		}
+	}
+
+	void Draw(
+		olc::Renderable* renderable,
+		const olc::vf2d& pos,
+		const olc::vf2d& size,
+		float depth)
+	{
+		if (renderable != nullptr) {
+			std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
+				renderable, 
+				pos,
+				size,
+				depth);
+
+			m_drawables.push_back(std::move(sbe));
 		}
 	}
 
 	void Draw(
 		olc::Renderable* renderable,
 		const olc::vf2d& pos, 
-		const olc::vf2d& scale, 
+		float scale, 
 		float depth) 
 	{
 		if (renderable != nullptr) {
 			std::unique_ptr<RenderBatchEntry> sbe = std::make_unique<RenderBatchEntry>(
 				renderable,
 				pos,
-				scale,
+				olc::vf2d(renderable->Sprite()->width * scale, renderable->Sprite()->height * scale),
 				depth);
 
 			m_drawables.push_back(std::move(sbe));
