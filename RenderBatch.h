@@ -66,6 +66,42 @@
 
 namespace olc {
 
+template<class T>
+class r2d_generic
+{
+public: // Constructors
+	r2d_generic() : r2d_generic(v2d_generic<T>(0,0), v2d_generic<T>(0,0)) { };
+	r2d_generic(const v2d_generic<T>& _pos, const v2d_generic<T>& _size) :
+		m_position(_pos), m_size(_size) { };
+	r2d_generic(const r2d_generic<T>& _other) :
+		m_position(_other.m_position), m_size(_other.m_size) { };
+	r2d_generic(const r2d_generic<T>&& _other) :
+		m_position(_other.m_position), m_size(_other.m_size) { };
+	r2d_generic& operator=(r2d_generic<T>& _other) {
+		m_position = _other.m_position;
+		m_size = _other.m_size;
+	}
+	virtual ~r2d_generic() = default;
+public: // New methods
+	inline v2d_generic<T> tl() const { return m_position; }
+	inline v2d_generic<T> br() const { return m_position + m_size; }
+	inline v2d_generic<T> size() const { return m_size;	}
+	inline void grow(v2d_generic<T> _delta) { m_size += _delta;	}
+	inline void move(v2d_generic<T> _delta) { m_position += _delta;	}
+	const std::string str() const { return std::string("[") + m_position.str() + ", " + m_size.str() + "]"; }
+	friend std::ostream& operator << (std::ostream& os, const r2d_generic<T>& rhs) { os << rhs.str(); return os; }
+
+private: // Data
+	v2d_generic<T> m_position;
+	v2d_generic<T> m_size;
+};
+
+// Helper type definitions for common types
+typedef v2d_generic<float> rf2d;
+typedef v2d_generic<double> rd2d;
+typedef v2d_generic<std::uint32_t> ri2d;
+typedef v2d_generic<std::int32_t> ru2d;
+
 class Camera
 {
 public: // Methods
