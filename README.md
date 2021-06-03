@@ -17,12 +17,12 @@ Have a RenderBatch instance somewhere outside your main loop:
    	olc::RenderBatch m_RenderBatch;
 
 Load your assets as Renderables and store them somewhere outside the main loop:
+
     olc::Renderable m_Ball;
-    ...
     m_Ball.Load("Assets\\ball.png");
-    ...
 
 First call:
+
     m_RenderBatch.Begin();
 
 This initializes the RenderBatch instance to accept new Draw() calls. End must be called when you have drawn all sprites.
