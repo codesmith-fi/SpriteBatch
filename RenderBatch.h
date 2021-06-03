@@ -88,8 +88,13 @@ public: // New methods
 	inline v2d_generic<T> size() const { return m_size;	}
 	inline void grow(v2d_generic<T> _delta) { m_size += _delta;	}
 	inline void move(v2d_generic<T> _delta) { m_position += _delta;	}
+	inline v2d_generic<T> center() const { return v2d_generic<T>(m_position / 2); }
 	const std::string str() const { return std::string("[") + m_position.str() + ", " + m_size.str() + "]"; }
 	friend std::ostream& operator << (std::ostream& os, const r2d_generic<T>& rhs) { os << rhs.str(); return os; }
+	r2d_generic<T> operator*(const T& rhs) const { return r2d_generic<T>(m_position, m_size * 2); }
+	r2d_generic<T> operator/(const T& rhs) const { return r2d_generic<T>(m_position, m_size / 2); }
+	r2d_generic<T>& operator *= (const T& rhs) { m_size *= rhs; return *this; }
+	r2d_generic<T>& operator /= (const T& rhs) { m_size /= rhs; return *this; }
 
 private: // Data
 	v2d_generic<T> m_position;
@@ -102,18 +107,19 @@ typedef v2d_generic<double> rd2d;
 typedef v2d_generic<std::uint32_t> ri2d;
 typedef v2d_generic<std::int32_t> ru2d;
 
-class Camera
+class Camera2D
 {
 public: // Methods
-	Camera() { };
-	Camera(const olc::vf2d& pos, const olc::vf2d& vs) :
-		position(pos), viewsize(vs) { };
-	void moveTo(const olc::vf2d& newpos) {
-		position = newpos;
-	}
-public: // Data
-	olc::vf2d position;
-	olc::vf2d viewsize;
+	Camera2D() { };
+	Camera2D(const olc::vf2d& _pos, const olc::vf2d& _viewsize) :
+		m_position(_pos), m_viewsize(_viewsize) { };
+	inline void set(const olc::vf2d& _newpos) { m_position = _newpos; }
+	inline void move(const olc::vf2d& _delta) { m_position += _delta; }
+	inline const olc::vf2d& position() { return m_position; }
+// @TODO: lerp functions
+private: // Data
+	olc::vf2d m_position;
+	olc::vf2d m_viewsize;
 };
 
 class RenderBatchEntry
@@ -156,9 +162,8 @@ public:
 	 * @param order @see DrawOrder enumeration
 	 * @notice Defaults to DrawOrder::UnOrdered
 	 */
-	void SetOrder(const DrawOrder& order) {
-		m_order = order;
-	}
+	void SetOrder(const DrawOrder& order) { m_order = order;}
+	void UseCamera(Camera2D* camera) { m_camera = camera; }
 
 	/**
 	 * Begin drawing with this RenderBatch
@@ -280,6 +285,7 @@ private: // Data
 	std::list<RenderBatchEntry> m_drawables;
 	DrawOrder m_order = DrawOrder::UNORDERED;
 	bool m_active = false;
+	Camera2D* m_camera = nullptr;
 };
 
 } // namespace olc
