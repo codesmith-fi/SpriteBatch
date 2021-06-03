@@ -5,13 +5,24 @@
 
 #include <iostream>
 #include <memory>
+#include <array>
+#include <random>
 
 #define OLC_PGE_APPLICATION
 #include "pge/olcPixelGameEngine.h"
 #include "RenderBatch.h"
 #include "DebugLogger.h"
 
- // Override base class with your custom functionality
+class RenderableSprite
+{
+public:
+	RenderableSprite() = default;
+	olc::Renderable* renderable;
+	olc::vf2d pos;
+	olc::vf2d size;
+	float z;
+};
+
 class PGEApplication : public olc::PixelGameEngine
 {
 public:
@@ -31,7 +42,26 @@ public:
 		LOG_INFO() << "PGEApplication::OnUserCreate() initializing";
 		m_Sprite1.Load("Assets\\desert.png");
 		m_Sprite2.Load("Assets\\soniccd.png");
+		m_Ball.Load("Assets\\ball.png");
 		m_RenderBatch.SetOrder(olc::RenderBatch::DrawOrder::Z_INC);
+
+		std::random_device dev;
+		std::mt19937 rng(dev());
+		std::uniform_int_distribution<std::mt19937::result_type> dist_x(0, ScreenWidth()-1);
+		std::uniform_int_distribution<std::mt19937::result_type> dist_y(0, ScreenHeight() - 1);
+		std::uniform_int_distribution<std::mt19937::result_type> dist_scale(1, 100);
+
+		for (int i = 0; i < 100; ++i) {
+			RenderableSprite s;
+			s.z = (float)dist_scale(rng) / 100.0f;
+			s.pos.x = (float)dist_x(rng);
+			s.pos.y = (float)dist_y(rng);
+			s.renderable = &m_Ball;
+			float scale = (float)dist_scale(rng) / 100.0f;
+			s.size.x = m_Ball.Sprite()->width * scale;
+			s.size.y = m_Ball.Sprite()->height * scale;		
+			m_sprites.push_back(s);
+		}
 		return true;
 	}
 
@@ -51,8 +81,18 @@ public:
 			olc::vf2d(mpos.x - m_Sprite2.Sprite()->width/2, 
 				mpos.y - m_Sprite2.Sprite()->height/2),
 			1.0f,
-			0.0f
+			0.4f
 			);
+
+		for (auto i = m_sprites.begin(); i != m_sprites.end(); ++i) {
+			m_RenderBatch.Draw(
+				i->renderable,
+				i->pos,
+				i->size,
+				i->z
+			);
+		}
+
 		m_RenderBatch.End();
 
 		std::string fpss = "FPS: " + std::to_string(GetFPS());
@@ -75,6 +115,8 @@ private:
 	olc::RenderBatch m_RenderBatch;
 	olc::Renderable m_Sprite1;
 	olc::Renderable m_Sprite2;
+	olc::Renderable m_Ball;
+	std::vector<RenderableSprite> m_sprites;
 };
 
 int main()

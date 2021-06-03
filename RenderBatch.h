@@ -80,16 +80,6 @@ public: // Data
 	olc::vf2d viewsize;
 };
 
-class RenderableSprite : public olc::Renderable
-{
-public:
-	RenderableSprite() {};
-	virtual ~RenderableSprite() {};
-	olc::vf2d pos;
-	olc::vf2d scale;
-	float z;
-};
-
 class RenderBatchEntry
 {
 public:
