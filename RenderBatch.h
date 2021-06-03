@@ -70,7 +70,7 @@ template<class T>
 class r2d_generic
 {
 public: // Constructors
-	r2d_generic() : r2d_generic(v2d_generic<T>(0,0), v2d_generic<T>(0,0)) { };
+	r2d_generic() : r2d_generic(v2d_generic<T>(0, 0), v2d_generic<T>(0, 0)) { };
 	r2d_generic(const v2d_generic<T>& _pos, const v2d_generic<T>& _size) :
 		m_position(_pos), m_size(_size) { };
 	r2d_generic(const r2d_generic<T>& _other) :
@@ -85,7 +85,14 @@ public: // Constructors
 public: // New methods
 	inline v2d_generic<T> tl() const { return m_position; }
 	inline v2d_generic<T> br() const { return m_position + m_size; }
-	inline v2d_generic<T> size() const { return m_size;	}
+	inline v2d_generic<T> size() const { return m_size; }
+	inline bool contains(v2d_generic<T> _point) { 
+		if ((_point.x >= m_position.x && _point.x < m_position.x + m_size.x) &&
+			(_point.y >= m_position.y && _point.y < m_position.y + m_size.y)) {
+			return true;
+		}
+		return false;
+	}
 	inline void grow(v2d_generic<T> _delta) { m_size += _delta;	}
 	inline void move(v2d_generic<T> _delta) { m_position += _delta;	}
 	inline v2d_generic<T> center() const { return v2d_generic<T>(m_position / 2); }
@@ -106,6 +113,51 @@ typedef v2d_generic<float> rf2d;
 typedef v2d_generic<double> rd2d;
 typedef v2d_generic<std::uint32_t> ri2d;
 typedef v2d_generic<std::int32_t> ru2d;
+
+
+/**
+@TODO: These comments are from my C# project where I had full 2-D transformations,
+this needs to be implemented again in C++ here.
+
+/// <summary>
+/// Get view matrix for rendering 2d stuff
+/// Origin of the translation is the center point of the viewport
+/// </summary>
+/// <param name="parallax">Parallax effect value</param>
+/// <returns>2D view matrix</returns>
+public Matrix GetViewMatrix(Vector2 parallax)
+{
+	viewMatrix = Matrix.CreateTranslation(new Vector3(-Position * parallax, 0.0f)) *
+			// Rotation translation
+			Matrix.CreateRotationZ(Rotation) *
+			// Scaling translation
+			Matrix.CreateScale(Scale, Scale, 1) *
+			// Translate around center of the viewport
+			Matrix.CreateTranslation(
+			new Vector3(Origin, 0.0f));
+	return viewMatrix;
+}
+
+/// <summary>
+/// Get view matrix from the point of given origin.
+/// Rotation point is the given origin.
+/// </summary>
+/// <param name="parallax">Parallax effect value</param>
+/// <param name="origin">Origin of translations</param>
+/// <returns></returns>
+public Matrix GetViewMatrix(Vector2 parallax, Vector2 origin)
+{
+	viewMatrix = Matrix.CreateTranslation(
+		new Vector3(-Position * parallax, 0.0f)) *
+			Matrix.CreateTranslation(new Vector3(-origin, 0.0f)) *
+			// Rotation translation
+			Matrix.CreateRotationZ(Rotation) *
+			// Scaling translation
+			Matrix.CreateScale(Scale, Scale, 1) *
+			Matrix.CreateTranslation(new Vector3(origin, 0.0f));
+	return viewMatrix;
+}
+*/
 
 class Camera2D
 {
@@ -155,20 +207,52 @@ public: // Enums
 public:
 	RenderBatch(const DrawOrder& order = DrawOrder::UNORDERED) :
 		m_order(order), m_active(false) { };
-	virtual ~RenderBatch() {}
+	virtual ~RenderBatch();
 
-	/**
-	 * Set the desired Z ordering. 
-	 * @param order @see DrawOrder enumeration
-	 * @notice Defaults to DrawOrder::UnOrdered
-	 */
-	void SetOrder(const DrawOrder& order) { m_order = order;}
+	/// Set the desired Z ordering. 
+	inline void SetOrder(const DrawOrder& order) { m_order = order;}
 
+	/// Begin drawing with this RenderBatch
+	/// Makes this RenderBatch active allowing calls to Draw() and End() etc.
+	void Begin();
+
+	/// End drawing and cause all Renderables to be drawn 
+	void End();
+
+	/// Add a new Renderable to the draw queue. 
+	/// Will not draw anything in this method, a call to End() will cause the 
+	/// drawing based on objects added with Draw() calls
+	void Draw(olc::Renderable* _renderable,	const olc::vf2d& _pos, 
+		const olc::vf2d& _size,	float _z, olc::Camera2D* _camera = nullptr);
+	void Draw( olc::Renderable* _renderable, const olc::vf2d& _pos, float _scale,
+		float _z, olc::Camera2D* _camera = nullptr);
+private:
 	/**
-	 * Begin drawing with this RenderBatch
-	 * Makes this RenderBatch active allowing calls to Draw() and End() etc.
+	 * Insert a RenderBatchEntry in desired Z order, either z increasing, 
+	 * decreasing or unordered.
+	 * Use SetOrder() to set the desired order. Defaults to UNORDERED which 
+	 * is the insertion order
 	 */
-	void Begin() {
+	void insertBatchEntry(RenderBatchEntry& _entry, Camera2D* _camera);
+	olc::vf2d translatePosition(const olc::vf2d& _pos, const Camera2D& camera);
+
+private: // Data
+	std::list<RenderBatchEntry> m_drawables;
+	DrawOrder m_order = DrawOrder::UNORDERED;
+	bool m_active = false;
+};
+} // namespace olc
+
+#ifdef OLC_PGEX_RENDERBATCH
+#undef OLC_PGEX_RENDERBATCH
+
+namespace olc {
+	RenderBatch::~RenderBatch()
+	{
+	}
+
+	void RenderBatch::Begin() 
+	{
 		// Ensure that this RenderBatch is not already active
 		assert(!m_active);
 
@@ -176,10 +260,8 @@ public:
 		m_drawables.clear();
 	}
 
-	/**
-	 * End drawing and cause all Renderables to be drawn 
-	 */
-	void End() {
+	void RenderBatch::End() 
+	{
 		// Ensure that Begin() was called prior to End()
 		assert(m_active);
 
@@ -187,33 +269,23 @@ public:
 			pge->DrawPartialDecal(
 				i->position,
 				i->size,
-				i->renderable->Decal(), 
-				vi2d(0,0), 
+				i->renderable->Decal(),
+				vi2d(0, 0),
 				vi2d(i->renderable->Sprite()->width, i->renderable->Sprite()->height));
 		}
 		m_active = false;
 	}
 
-	/**
-	 * Add a new Renderable to the draw queue. 
-	 * Will not draw anything in this method, a call to End() will cause the 
-	 * drawing based on objects added with Draw() calls
-	 * 
-	 * @param renderable A pointer to renderable object containing Sprite and Decal
-	 * @param pos Position vector, location where the renderable will be drawn to
-	 * @param size Size of the target renderable, will be scaled to fit
-	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
-	 */
-	void Draw(
+	void RenderBatch::Draw(
 		olc::Renderable* _renderable,
 		const olc::vf2d& _pos,
 		const olc::vf2d& _size,
-		float _z, olc::Camera2D* _camera = nullptr)
+		float _z, olc::Camera2D* _camera)
 	{
 		// Ensure that Begin() was called and this RenderBatch is active
 		assert(m_active);
 
-		if(_renderable != nullptr) {
+		if (_renderable != nullptr) {
 			RenderBatchEntry entry(
 				_renderable,
 				_pos,
@@ -224,27 +296,17 @@ public:
 		}
 	}
 
-	/**
-	 * Add a new Renderable to the draw queue.
-	 * Will not draw anything in this method, a call to End() will cause the
-	 * drawing based on objects added with Draw() calls
-	 *
-	 * @param renderable A pointer to renderable object containing Sprite and Decal
-	 * @param pos Position vector, location where the renderable will be drawn to
-	 * @param scale Scaling factor, 1.0f means the original bitmap size
-	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
-	 */
-	void Draw(
+	void RenderBatch::Draw(
 		olc::Renderable* _renderable,
-		const olc::vf2d& _pos, 
-		float _scale, 
+		const olc::vf2d& _pos,
+		float _scale,
 		float _z,
-		olc::Camera2D* _camera = nullptr) 
+		olc::Camera2D* _camera)
 	{
 		// Ensure that Begin() was called and this RenderBatch is active
 
 		assert(m_active);
-		if(_renderable != nullptr) {
+		if (_renderable != nullptr) {
 			RenderBatchEntry entry(
 				_renderable,
 				_pos,
@@ -254,14 +316,8 @@ public:
 			insertBatchEntry(entry, _camera);
 		}
 	}
-private:
-	/**
-	 * Insert a RenderBatchEntry in desired Z order, either z increasing, 
-	 * decreasing or unordered.
-	 * Use SetOrder() to set the desired order. Defaults to UNORDERED which 
-	 * is the insertion order
-	 */
-	void insertBatchEntry(RenderBatchEntry& _entry, Camera2D* _camera) {
+
+	void RenderBatch::insertBatchEntry(RenderBatchEntry& _entry, Camera2D* _camera) {
 		auto begin = m_drawables.begin();
 		auto end = m_drawables.end();
 
@@ -271,7 +327,7 @@ private:
 		}
 		_entry.position = tpos;
 
-		if(m_order == DrawOrder::Z_INC) {
+		if (m_order == DrawOrder::Z_INC) {
 			while ((begin != end) && ((*begin).z > _entry.z)) {
 				++begin;
 			}
@@ -283,22 +339,15 @@ private:
 			}
 			m_drawables.insert(begin, _entry);
 		}
-		else {			
+		else {
 			m_drawables.push_back(_entry);
 		}
 	}
 
-	olc::vf2d translatePosition(const olc::vf2d& _pos, const Camera2D& camera) {
+	olc::vf2d RenderBatch::translatePosition(const olc::vf2d& _pos, const Camera2D& camera) {
 		olc::vf2d pos(_pos - camera.Position());
 		return pos;
 	}
-
-private: // Data
-	std::list<RenderBatchEntry> m_drawables;
-	DrawOrder m_order = DrawOrder::UNORDERED;
-	bool m_active = false;
-};
-
-} // namespace olc
-
+}
+#endif // OLC_PGEX_RENDERBATCH
 #endif // __RENDERBATCH_H_DEFINED__

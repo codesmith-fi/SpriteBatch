@@ -10,6 +10,8 @@
 
 #define OLC_PGE_APPLICATION
 #include "pge/olcPixelGameEngine.h"
+
+#define OLC_PGEX_RENDERBATCH
 #include "RenderBatch.h"
 #include "DebugLogger.h"
 
