@@ -113,9 +113,9 @@ public: // Methods
 	Camera2D() { };
 	Camera2D(const olc::vf2d& _pos, const olc::vf2d& _viewsize) :
 		m_position(_pos), m_viewsize(_viewsize) { };
-	inline void set(const olc::vf2d& _newpos) { m_position = _newpos; }
-	inline void move(const olc::vf2d& _delta) { m_position += _delta; }
-	inline const olc::vf2d& position() { return m_position; }
+	inline void Set(const olc::vf2d& _newpos) { m_position = _newpos; }
+	inline void Move(const olc::vf2d& _delta) { m_position += _delta; }
+	inline const olc::vf2d& Position() const { return m_position; }
 // @TODO: lerp functions
 private: // Data
 	olc::vf2d m_position;
@@ -163,7 +163,6 @@ public:
 	 * @notice Defaults to DrawOrder::UnOrdered
 	 */
 	void SetOrder(const DrawOrder& order) { m_order = order;}
-	void UseCamera(Camera2D* camera) { m_camera = camera; }
 
 	/**
 	 * Begin drawing with this RenderBatch
@@ -206,22 +205,22 @@ public:
 	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
 	 */
 	void Draw(
-		olc::Renderable* renderable,
-		const olc::vf2d& pos,
-		const olc::vf2d& size,
-		float z)
+		olc::Renderable* _renderable,
+		const olc::vf2d& _pos,
+		const olc::vf2d& _size,
+		float _z, olc::Camera2D* _camera = nullptr)
 	{
 		// Ensure that Begin() was called and this RenderBatch is active
 		assert(m_active);
 
-		if(renderable != nullptr) {
+		if(_renderable != nullptr) {
 			RenderBatchEntry entry(
-				renderable,
-				pos,
-				size,
-				z
+				_renderable,
+				_pos,
+				_size,
+				_z
 			);
-			insertBatchEntry(entry);
+			insertBatchEntry(entry, _camera);
 		}
 	}
 
@@ -236,22 +235,23 @@ public:
 	 * @param z Depth value (Z), order depends on which DrawMode was set using SetOrder()
 	 */
 	void Draw(
-		olc::Renderable* renderable,
-		const olc::vf2d& pos, 
-		float scale, 
-		float z) 
+		olc::Renderable* _renderable,
+		const olc::vf2d& _pos, 
+		float _scale, 
+		float _z,
+		olc::Camera2D* _camera = nullptr) 
 	{
 		// Ensure that Begin() was called and this RenderBatch is active
 
 		assert(m_active);
-		if(renderable != nullptr) {
+		if(_renderable != nullptr) {
 			RenderBatchEntry entry(
-				renderable,
-				pos,
-				olc::vf2d(renderable->Sprite()->width * scale, renderable->Sprite()->height * scale),
-				z
+				_renderable,
+				_pos,
+				olc::vf2d(_renderable->Sprite()->width * _scale, _renderable->Sprite()->height * _scale),
+				_z
 			);
-			insertBatchEntry(entry);
+			insertBatchEntry(entry, _camera);
 		}
 	}
 private:
@@ -261,31 +261,42 @@ private:
 	 * Use SetOrder() to set the desired order. Defaults to UNORDERED which 
 	 * is the insertion order
 	 */
-	void insertBatchEntry(RenderBatchEntry& entry) {
+	void insertBatchEntry(RenderBatchEntry& _entry, Camera2D* _camera) {
 		auto begin = m_drawables.begin();
 		auto end = m_drawables.end();
+
+		olc::vf2d tpos(_entry.position);
+		if (_camera != nullptr) {
+			tpos = translatePosition(tpos, *_camera);
+		}
+		_entry.position = tpos;
+
 		if(m_order == DrawOrder::Z_INC) {
-			while ((begin != end) && ((*begin).z > entry.z)) {
+			while ((begin != end) && ((*begin).z > _entry.z)) {
 				++begin;
 			}
-			m_drawables.insert(begin, entry);
+			m_drawables.insert(begin, _entry);
 		}
 		else if (m_order == DrawOrder::Z_DECR) {
-			while ((begin != end) && ((*begin).z < entry.z)) {
+			while ((begin != end) && ((*begin).z < _entry.z)) {
 				++begin;
 			}
-			m_drawables.insert(begin, entry);
+			m_drawables.insert(begin, _entry);
 		}
 		else {			
-			m_drawables.push_back(entry);
+			m_drawables.push_back(_entry);
 		}
+	}
+
+	olc::vf2d translatePosition(const olc::vf2d& _pos, const Camera2D& camera) {
+		olc::vf2d pos(_pos - camera.Position());
+		return pos;
 	}
 
 private: // Data
 	std::list<RenderBatchEntry> m_drawables;
 	DrawOrder m_order = DrawOrder::UNORDERED;
 	bool m_active = false;
-	Camera2D* m_camera = nullptr;
 };
 
 } // namespace olc

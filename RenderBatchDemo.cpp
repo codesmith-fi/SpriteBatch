@@ -47,6 +47,7 @@ public:
 		m_Sprite2.Load("Assets\\soniccd.png");
 		m_Ball.Load("Assets\\ball.png");
 		m_RenderBatch.SetOrder(olc::RenderBatch::DrawOrder::Z_INC);
+		m_camera.Set(olc::vf2d(0.0f, 0.0f));
 		return true;
 	}
 
@@ -69,31 +70,36 @@ public:
 			&m_Ball,
 			olc::vf2d(0.0f - sw/2, 0.0f-sh/2),
 			1.0f,
-			0.4f
+			0.4f,
+			&m_camera
 		);
 		m_RenderBatch.Draw(
 			&m_Ball,
 			olc::vf2d(rw - sw/2, 0.0f - sh / 2),
 			1.0f,
-			0.4f
+			0.4f,
+			&m_camera
 		);
 		m_RenderBatch.Draw(
 			&m_Ball,
 			olc::vf2d(0.0f - sw / 2, rh - sh/2),
 			1.0f,
-			0.4f
+			0.4f,
+			&m_camera
 		);
 		m_RenderBatch.Draw(
 			&m_Ball,
 			olc::vf2d(rw - sw / 2, rh - sh/2),
 			1.0f,
-			0.4f
+			0.4f,
+			&m_camera
 		);
 		m_RenderBatch.Draw(
 			&m_Ball,
 			olc::vf2d(rw/2-sw/2, rh/2-sh/2),
 			1.0f,
-			0.4f
+			0.4f,
+			&m_camera
 		);
 		m_RenderBatch.Draw(
 			&m_Ball,
@@ -104,8 +110,22 @@ public:
 		m_RenderBatch.End();
 
 		std::string fpss = "FPS: " + std::to_string(GetFPS());
-
 		DrawStringDecal(olc::vf2d(10.0f, 10.0f), fpss);
+
+		olc::vf2d delta(0.0f, 0.0f);
+		if(GetKey(olc::Key::LEFT).bHeld) {
+			delta.x = -0.1;
+		}
+		if (GetKey(olc::Key::RIGHT).bHeld) {
+			delta.x = 0.1;
+		}
+		if (GetKey(olc::Key::UP).bHeld) {
+			delta.y = -0.1;
+		}
+		if (GetKey(olc::Key::DOWN).bHeld) {
+			delta.y = 0.1;
+		}
+		m_camera.Move(delta);
 		return true;
 	}
 
@@ -124,6 +144,8 @@ private:
 	olc::Renderable m_Sprite1;
 	olc::Renderable m_Sprite2;
 	olc::Renderable m_Ball;
+	olc::Camera2D m_camera;
+	olc::vf2d m_prevMousePos;
 };
 
 int main()
