@@ -1,5 +1,5 @@
 /*
-	olcPGEX_RenderBatch.h
+	RenderBatch.h
 	+-------------------------------------------------------------+
 	|         OneLoneCoder Pixel Game Engine Extension            |
 	|                RenderBatch - v0.1.0			              |
@@ -8,13 +8,13 @@
 	What is this?
 	~~~~~~~~~~~~~
 	This is an extension to Pixel Game Engine and aims to implement
-	a simple texture atlas (or sprite sheet). Texture atlas is basically
-	one big sprite having multiple sub images. These sub images can
-	be drawn separately to form textures or animated sprites.
-	This class does not animate anything by itself, you must ask the
-	Draw() call to draw sub frames separately.
+	a simple Sprite Batch.
 
-	See the source file TextureAtlasAppPGE.cpp for an example how to use.
+	Sprite batch allows the user to chain multiple Draw() calls with Z-ordering
+	and with 2-D Camera	transformations.
+
+	For example on how to use, see RenderBatchDemo.cpp.
+
 
 	License (OLC-3)
 	~~~~~~~~~~~~~~~

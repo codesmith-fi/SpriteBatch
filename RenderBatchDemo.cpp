@@ -43,8 +43,7 @@ public:
 	bool OnUserCreate() override
 	{
 		LOG_INFO() << "PGEApplication::OnUserCreate() initializing";
-		m_Sprite1.Load("Assets\\desert.png");
-		m_Sprite2.Load("Assets\\soniccd.png");
+		m_background.Load("Assets\\desert.png");
 		m_Ball.Load("Assets\\ball.png");
 		m_RenderBatch.SetOrder(olc::RenderBatch::DrawOrder::Z_INC);
 		m_camera.Set(olc::vf2d(0.0f, 0.0f));
@@ -57,7 +56,7 @@ public:
 
 		m_RenderBatch.Begin();
 		m_RenderBatch.Draw(
-			&m_Sprite1,
+			&m_background,
 			olc::vf2d(0.0f, 0.0f),
 			olc::vf2d((float)ScreenWidth(), (float)ScreenHeight()),
 			1.0f
@@ -141,8 +140,7 @@ public:
 
 private:
 	olc::RenderBatch m_RenderBatch;
-	olc::Renderable m_Sprite1;
-	olc::Renderable m_Sprite2;
+	olc::Renderable m_background;
 	olc::Renderable m_Ball;
 	olc::Camera2D m_camera;
 	olc::vf2d m_prevMousePos;
