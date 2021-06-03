@@ -21,6 +21,7 @@ public:
 	olc::vf2d pos;
 	olc::vf2d size;
 	float z;
+	olc::vf2d pos_delta;
 };
 
 class PGEApplication : public olc::PixelGameEngine
@@ -49,13 +50,14 @@ public:
 		std::mt19937 rng(dev());
 		std::uniform_int_distribution<std::mt19937::result_type> dist_x(0, ScreenWidth()-1);
 		std::uniform_int_distribution<std::mt19937::result_type> dist_y(0, ScreenHeight() - 1);
-		std::uniform_int_distribution<std::mt19937::result_type> dist_scale(1, 100);
+		std::uniform_int_distribution<std::mt19937::result_type> dist_scale(10, 100);
 
 		for (int i = 0; i < 100; ++i) {
 			RenderableSprite s;
 			s.z = (float)dist_scale(rng) / 100.0f;
 			s.pos.x = (float)dist_x(rng);
 			s.pos.y = (float)dist_y(rng);
+			s.pos_delta = olc::vf2d(dist_scale(rng)/100.0f, dist_scale(rng) / 100.0f);
 			s.renderable = &m_Ball;
 			float scale = (float)dist_scale(rng) / 100.0f;
 			s.size.x = m_Ball.Sprite()->width * scale;
@@ -91,6 +93,19 @@ public:
 				i->size,
 				i->z
 			);
+
+			i->pos += i->pos_delta;
+			if(i->pos.x <= (0 - i->renderable->Sprite()->width/2) || 
+				i->pos.x >= ScreenWidth() - (i->renderable->Sprite()->width / 2))
+			{
+				i->pos_delta.x = -1.0f * i->pos_delta.x;
+			}
+			if(i->pos.y <= (0 - i->renderable->Sprite()->height/2) || 
+				i->pos.y >= (ScreenHeight() - i->renderable->Sprite()->height / 2))
+			{
+				i->pos_delta.y = -1.0f * i->pos_delta.y;
+			}
+
 		}
 
 		m_RenderBatch.End();
