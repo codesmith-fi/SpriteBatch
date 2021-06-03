@@ -16,7 +16,7 @@
 class RenderableSprite
 {
 public:
-	RenderableSprite() = default;
+	RenderableSprite() : z(0.0f) { };
 	olc::Renderable* renderable;
 	olc::vf2d pos;
 	olc::vf2d size;
@@ -75,13 +75,13 @@ public:
 		m_RenderBatch.Draw(
 			&m_Sprite1,
 			olc::vf2d(0.0f, 0.0f),
-			olc::vf2d(ScreenWidth(), ScreenHeight()),
+			olc::vf2d((float)ScreenWidth(), (float)ScreenHeight()),
 			1.0f
 		);
 		m_RenderBatch.Draw(
 			&m_Sprite2,
-			olc::vf2d(mpos.x - m_Sprite2.Sprite()->width/2, 
-				mpos.y - m_Sprite2.Sprite()->height/2),
+			olc::vf2d(mpos.x - ((float)m_Sprite2.Sprite()->width) / 2.0f,
+				mpos.y - ((float)m_Sprite2.Sprite()->height) / 2.0f),
 			1.0f,
 			0.4f
 			);

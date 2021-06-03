@@ -180,13 +180,12 @@ public:
 		assert(m_active);
 
 		for (auto i = m_drawables.begin(); i != m_drawables.end(); ++i) {
-			float tw = i->renderable->Sprite()->width;
-			float th = i->renderable->Sprite()->height;
 			pge->DrawPartialDecal(
 				i->position,
 				i->size,
 				i->renderable->Decal(), 
-				vi2d(0,0), vi2d(tw, th));
+				vi2d(0,0), 
+				vi2d(i->renderable->Sprite()->width, i->renderable->Sprite()->height));
 		}
 		m_active = false;
 	}
