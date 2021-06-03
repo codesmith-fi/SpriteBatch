@@ -28,28 +28,19 @@ First call:
 This initializes the RenderBatch instance to accept new Draw() calls. End must be called when you have drawn all sprites.
 
 To Draw sprites, use Draw() calls with or without Camera.
-		m_RenderBatch.Draw(
-			&m_Ball,
-			position,
-			scalefactor,
-			z_order
-		);
+	
+	m_RenderBatch.Draw(&m_Ball, position, scalefactor, z_order );
 
-        or with camera
+or with camera
 
-        m_RenderBatch.Draw(
-			&m_Ball,
-			position,
-			scalefactor,
-			z_order,
-			&m_camera
-		);
+    m_RenderBatch.Draw(&m_Ball, position, scalefactor, z_order, &_camera);
 
 For the camera version, you need to of course have an instance of a Camera2D class which currently only handles the world position. The version without Camera argument uses screen coordinates as is.
 
 There are other overloads, for example one which allows drawing the sprite to a target rectangle, automatically scaling the sprite if needed.
 
 To cause the actual drawing happen to the screen call:
+
     m_RenderBatch.End();
 
 Internally it uses PGE's Decals to draw the sprites with GPU.
